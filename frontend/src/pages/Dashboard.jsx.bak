@@ -1,0 +1,16 @@
+﻿128:       {/* Quick Actions */}
+129:       <div className="quick-actions">
+130:         {quickActions.map((action, i) => {
+132:           const Icon = action.icon;
+133:           return (
+134:               <div className={`qa-icon ${action.bg}`}>
+136:                 <Icon className={`w-5 h-5 ${action.textColor}`} />
+138:                 <div className="flex-1">
+140:                   {action.label}
+142:             </button>
+141:           </div>
+142:         </div>
+143: 
+143:       {/* Charts Row */}
+144:         <div className="charts-row">
+145:           <ChartWidget title="Monthly Sales" subtitle="Orders and revenue from the database" height={300}>

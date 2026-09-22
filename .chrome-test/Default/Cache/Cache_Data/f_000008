@@ -1,0 +1,228 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/Auth.jsx");const useState = __vite__cjsImport0_react["useState"];const _jsxDEV = __vite__cjsImport3_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport3_react_jsxDevRuntime["Fragment"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=8ee8b537";
+import { request } from "/src/config.js";
+import { Field } from "/src/components/index.js";
+var _jsxFileName = "C:/Users/sahil/OneDrive/Desktop/dashboard-company-style/frontend/src/pages/Auth.jsx";
+import __vite__cjsImport3_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8ee8b537";
+var _s = $RefreshSig$();
+function Auth({ onLogin }) {
+	_s();
+	const [mode, setMode] = useState("login"), [form, setForm] = useState({}), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+	const title = mode === "login" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset password";
+	const submit = async (e) => {
+		e.preventDefault();
+		setBusy(true);
+		setMessage("");
+		const endpoint = mode === "signup" ? "/auth/signup" : mode === "login" ? "/auth/login" : "/auth/forgot-password";
+		const body = mode === "signup" ? {
+			fullName: form.fullName,
+			email: form.email,
+			password: form.password,
+			phone: form.phone,
+			department: form.department
+		} : mode === "login" ? {
+			email: form.email,
+			password: form.password
+		} : {
+			email: form.email,
+			newPassword: form.password
+		};
+		const response = await request(endpoint, {
+			method: "POST",
+			body: JSON.stringify(body)
+		});
+		const result = await response.json();
+		setBusy(false);
+		if (!response.ok) return setMessage(result.message);
+		if (mode === "forgot") {
+			setMessage("Password updated. You can sign in now.");
+			setMode("login");
+			return;
+		}
+		onLogin(result);
+	};
+	return /* @__PURE__ */ _jsxDEV("div", {
+		className: "auth-page",
+		children: /* @__PURE__ */ _jsxDEV("form", {
+			className: "auth-card",
+			onSubmit: submit,
+			children: [
+				/* @__PURE__ */ _jsxDEV("div", {
+					className: "auth-logo",
+					children: "C"
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 55,
+					columnNumber: 9
+				}, this),
+				/* @__PURE__ */ _jsxDEV("h1", { children: title }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 56,
+					columnNumber: 9
+				}, this),
+				/* @__PURE__ */ _jsxDEV("p", { children: mode === "login" ? "Sign in to your company dashboard." : mode === "signup" ? "Join the company dashboard with an employee account." : "Set a new password for your employee account." }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 57,
+					columnNumber: 9
+				}, this),
+				mode === "signup" && /* @__PURE__ */ _jsxDEV(_Fragment, { children: [
+					/* @__PURE__ */ _jsxDEV(Field, {
+						label: "Full name",
+						value: form.fullName,
+						change: (v) => setForm({
+							...form,
+							fullName: v
+						})
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 66,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV(Field, {
+						label: "Phone",
+						value: form.phone,
+						change: (v) => setForm({
+							...form,
+							phone: v
+						})
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 71,
+						columnNumber: 13
+					}, this),
+					/* @__PURE__ */ _jsxDEV(Field, {
+						label: "Department",
+						value: form.department,
+						change: (v) => setForm({
+							...form,
+							department: v
+						})
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 76,
+						columnNumber: 13
+					}, this)
+				] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 65,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV(Field, {
+					label: "Email",
+					type: "email",
+					value: form.email,
+					change: (v) => setForm({
+						...form,
+						email: v
+					})
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 83,
+					columnNumber: 9
+				}, this),
+				/* @__PURE__ */ _jsxDEV(Field, {
+					label: mode === "forgot" ? "New password" : "Password",
+					type: "password",
+					value: form.password,
+					change: (v) => setForm({
+						...form,
+						password: v
+					})
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 89,
+					columnNumber: 9
+				}, this),
+				message && /* @__PURE__ */ _jsxDEV("div", {
+					className: "notice",
+					children: message
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 95,
+					columnNumber: 21
+				}, this),
+				/* @__PURE__ */ _jsxDEV("button", {
+					className: "primary wide",
+					disabled: busy,
+					children: busy ? "Please wait…" : mode === "login" ? "Sign in" : mode === "signup" ? "Create account" : "Update password"
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 96,
+					columnNumber: 9
+				}, this),
+				mode === "login" && /* @__PURE__ */ _jsxDEV("button", {
+					type: "button",
+					className: "text-button",
+					onClick: () => {
+						setMode("forgot");
+						setMessage("");
+					},
+					children: "Forgot password?"
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 106,
+					columnNumber: 11
+				}, this),
+				/* @__PURE__ */ _jsxDEV("p", {
+					className: "switch",
+					children: [
+						mode === "signup" ? "Already have an account?" : "Need an account?",
+						" ",
+						/* @__PURE__ */ _jsxDEV("button", {
+							type: "button",
+							onClick: () => {
+								setMode(mode === "signup" ? "login" : "signup");
+								setMessage("");
+							},
+							children: mode === "signup" ? "Sign in" : "Sign up"
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 119,
+							columnNumber: 11
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 117,
+					columnNumber: 9
+				}, this)
+			]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 54,
+			columnNumber: 7
+		}, this)
+	}, void 0, false, {
+		fileName: _jsxFileName,
+		lineNumber: 53,
+		columnNumber: 5
+	}, this);
+}
+_s(Auth, "iXjHblgUAUWxFFb+sBs4bQGs798=");
+_c = Auth;
+export default Auth;
+var _c;
+$RefreshReg$(_c, "Auth");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/pages/Auth.jsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/sahil/OneDrive/Desktop/dashboard-company-style/frontend/src/pages/Auth.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/sahil/OneDrive/Desktop/dashboard-company-style/frontend/src/pages/Auth.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/sahil/OneDrive/Desktop/dashboard-company-style/frontend/src/pages/Auth.jsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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QUFVO0tBQ1YsZUFBZTtNQUNiLFFBQVEsUUFBUTtNQUNoQixXQUFXLEVBQUU7S0FDZjtlQUNEO0lBRU87Ozs7O0lBRVYsd0JBQUMsS0FBRDtLQUFHLFdBQVU7ZUFBYjtNQUNHLFNBQVMsV0FBVyw2QkFBNkI7TUFBb0I7TUFDdEUsd0JBQUMsVUFBRDtPQUNFLE1BQUs7T0FDTCxlQUFlO1FBQ2IsUUFBUSxTQUFTLFdBQVcsVUFBVSxRQUFRO1FBQzlDLFdBQVcsRUFBRTtPQUNmO2lCQUVDLFNBQVMsV0FBVyxZQUFZO01BQzNCOzs7OztLQUNQOzs7Ozs7R0FDQzs7Ozs7O0NBQ0g7Ozs7O0FBRVQ7OztBQUVBLGVBQWUiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiQXV0aC5qc3giXSwidmVyc2lvbiI6Mywic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tIFwicmVhY3RcIjtcclxuaW1wb3J0IHsgcmVxdWVzdCB9IGZyb20gXCIuLi9jb25maWdcIjtcclxuaW1wb3J0IHsgRmllbGQgfSBmcm9tIFwiLi4vY29tcG9uZW50c1wiO1xyXG5cclxuZnVuY3Rpb24gQXV0aCh7IG9uTG9naW4gfSkge1xyXG4gIGNvbnN0IFttb2RlLCBzZXRNb2RlXSA9IHVzZVN0YXRlKFwibG9naW5cIiksXHJcbiAgICBbZm9ybSwgc2V0Rm9ybV0gPSB1c2VTdGF0ZSh7fSksXHJcbiAgICBbbWVzc2FnZSwgc2V0TWVzc2FnZV0gPSB1c2VTdGF0ZShcIlwiKSxcclxuICAgIFtidXN5LCBzZXRCdXN5XSA9IHVzZVN0YXRlKGZhbHNlKTtcclxuICBjb25zdCB0aXRsZSA9XHJcbiAgICBtb2RlID09PSBcImxvZ2luXCJcclxuICAgICAgPyBcIldlbGNvbWUgYmFja1wiXHJcbiAgICAgIDogbW9kZSA9PT0gXCJzaWdudXBcIlxyXG4gICAgICAgID8gXCJDcmVhdGUgeW91ciBhY2NvdW50XCJcclxuICAgICAgICA6IFwiUmVzZXQgcGFzc3dvcmRcIjtcclxuICBjb25zdCBzdWJtaXQgPSBhc3luYyAoZSkgPT4ge1xyXG4gICAgZS5wcmV2ZW50RGVmYXVsdCgpO1xyXG4gICAgc2V0QnVzeSh0cnVlKTtcclxuICAgIHNldE1lc3NhZ2UoXCJcIik7XHJcbiAgICBjb25zdCBlbmRwb2ludCA9XHJcbiAgICAgIG1vZGUgPT09IFwic2lnbnVwXCJcclxuICAgICAgICA/IFwiL2F1dGgvc2lnbnVwXCJcclxuICAgICAgICA6IG1vZGUgPT09IFwibG9naW5cIlxyXG4gICAgICAgICAgPyBcIi9hdXRoL2xvZ2luXCJcclxuICAgICAgICAgIDogXCIvYXV0aC9mb3Jnb3QtcGFzc3dvcmRcIjtcclxuICAgIGNvbnN0IGJvZHkgPVxyXG4gICAgICBtb2RlID09PSBcInNpZ251cFwiXHJcbiAgICAgICAgPyB7XHJcbiAgICAgICAgICAgIGZ1bGxOYW1lOiBmb3JtLmZ1bGxOYW1lLFxyXG4gICAgICAgICAgICBlbWFpbDogZm9ybS5lbWFpbCxcclxuICAgICAgICAgICAgcGFzc3dvcmQ6IGZvcm0ucGFzc3dvcmQsXHJcbiAgICAgICAgICAgIHBob25lOiBmb3JtLnBob25lLFxyXG4gICAgICAgICAgICBkZXBhcnRtZW50OiBmb3JtLmRlcGFydG1lbnQsXHJcbiAgICAgICAgICB9XHJcbiAgICAgICAgOiBtb2RlID09PSBcImxvZ2luXCJcclxuICAgICAgICAgID8geyBlbWFpbDogZm9ybS5lbWFpbCwgcGFzc3dvcmQ6IGZvcm0ucGFzc3dvcmQgfVxyXG4gICAgICAgICAgOiB7IGVtYWlsOiBmb3JtLmVtYWlsLCBuZXdQYXNzd29yZDogZm9ybS5wYXNzd29yZCB9O1xyXG4gICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCByZXF1ZXN0KGVuZHBvaW50LCB7XHJcbiAgICAgIG1ldGhvZDogXCJQT1NUXCIsXHJcbiAgICAgIGJvZHk6IEpTT04uc3RyaW5naWZ5KGJvZHkpLFxyXG4gICAgfSk7XHJcbiAgICBjb25zdCByZXN1bHQgPSBhd2FpdCByZXNwb25zZS5qc29uKCk7XHJcbiAgICBzZXRCdXN5KGZhbHNlKTtcclxuICAgIGlmICghcmVzcG9uc2Uub2spIHJldHVybiBzZXRNZXNzYWdlKHJlc3VsdC5tZXNzYWdlKTtcclxuICAgIGlmIChtb2RlID09PSBcImZvcmdvdFwiKSB7XHJcbiAgICAgIHNldE1lc3NhZ2UoXCJQYXNzd29yZCB1cGRhdGVkLiBZb3UgY2FuIHNpZ24gaW4gbm93LlwiKTtcclxuICAgICAgc2V0TW9kZShcImxvZ2luXCIpO1xyXG4gICAgICByZXR1cm47XHJcbiAgICB9XHJcbiAgICBvbkxvZ2luKHJlc3VsdCk7XHJcbiAgfTtcclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJhdXRoLXBhZ2VcIj5cclxuICAgICAgPGZvcm0gY2xhc3NOYW1lPVwiYXV0aC1jYXJkXCIgb25TdWJtaXQ9e3N1Ym1pdH0+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhdXRoLWxvZ29cIj5DPC9kaXY+XHJcbiAgICAgICAgPGgxPnt0aXRsZX08L2gxPlxyXG4gICAgICAgIDxwPlxyXG4gICAgICAgICAge21vZGUgPT09IFwibG9naW5cIlxyXG4gICAgICAgICAgICA/IFwiU2lnbiBpbiB0byB5b3VyIGNvbXBhbnkgZGFzaGJvYXJkLlwiXHJcbiAgICAgICAgICAgIDogbW9kZSA9PT0gXCJzaWdudXBcIlxyXG4gICAgICAgICAgICAgID8gXCJKb2luIHRoZSBjb21wYW55IGRhc2hib2FyZCB3aXRoIGFuIGVtcGxveWVlIGFjY291bnQuXCJcclxuICAgICAgICAgICAgICA6IFwiU2V0IGEgbmV3IHBhc3N3b3JkIGZvciB5b3VyIGVtcGxveWVlIGFjY291bnQuXCJ9XHJcbiAgICAgICAgPC9wPlxyXG4gICAgICAgIHttb2RlID09PSBcInNpZ251cFwiICYmIChcclxuICAgICAgICAgIDw+XHJcbiAgICAgICAgICAgIDxGaWVsZFxyXG4gICAgICAgICAgICAgIGxhYmVsPVwiRnVsbCBuYW1lXCJcclxuICAgICAgICAgICAgICB2YWx1ZT17Zm9ybS5mdWxsTmFtZX1cclxuICAgICAgICAgICAgICBjaGFuZ2U9eyh2KSA9PiBzZXRGb3JtKHsgLi4uZm9ybSwgZnVsbE5hbWU6IHYgfSl9XHJcbiAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgIDxGaWVsZFxyXG4gICAgICAgICAgICAgIGxhYmVsPVwiUGhvbmVcIlxyXG4gICAgICAgICAgICAgIHZhbHVlPXtmb3JtLnBob25lfVxyXG4gICAgICAgICAgICAgIGNoYW5nZT17KHYpID0+IHNldEZvcm0oeyAuLi5mb3JtLCBwaG9uZTogdiB9KX1cclxuICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgPEZpZWxkXHJcbiAgICAgICAgICAgICAgbGFiZWw9XCJEZXBhcnRtZW50XCJcclxuICAgICAgICAgICAgICB2YWx1ZT17Zm9ybS5kZXBhcnRtZW50fVxyXG4gICAgICAgICAgICAgIGNoYW5nZT17KHYpID0+IHNldEZvcm0oeyAuLi5mb3JtLCBkZXBhcnRtZW50OiB2IH0pfVxyXG4gICAgICAgICAgICAvPlxyXG4gICAgICAgICAgPC8+XHJcbiAgICAgICAgKX1cclxuICAgICAgICA8RmllbGRcclxuICAgICAgICAgIGxhYmVsPVwiRW1haWxcIlxyXG4gICAgICAgICAgdHlwZT1cImVtYWlsXCJcclxuICAgICAgICAgIHZhbHVlPXtmb3JtLmVtYWlsfVxyXG4gICAgICAgICAgY2hhbmdlPXsodikgPT4gc2V0Rm9ybSh7IC4uLmZvcm0sIGVtYWlsOiB2IH0pfVxyXG4gICAgICAgIC8+XHJcbiAgICAgICAgPEZpZWxkXHJcbiAgICAgICAgICBsYWJlbD17bW9kZSA9PT0gXCJmb3Jnb3RcIiA/IFwiTmV3IHBhc3N3b3JkXCIgOiBcIlBhc3N3b3JkXCJ9XHJcbiAgICAgICAgICB0eXBlPVwicGFzc3dvcmRcIlxyXG4gICAgICAgICAgdmFsdWU9e2Zvcm0ucGFzc3dvcmR9XHJcbiAgICAgICAgICBjaGFuZ2U9eyh2KSA9PiBzZXRGb3JtKHsgLi4uZm9ybSwgcGFzc3dvcmQ6IHYgfSl9XHJcbiAgICAgICAgLz5cclxuICAgICAgICB7bWVzc2FnZSAmJiA8ZGl2IGNsYXNzTmFtZT1cIm5vdGljZVwiPnttZXNzYWdlfTwvZGl2Pn1cclxuICAgICAgICA8YnV0dG9uIGNsYXNzTmFtZT1cInByaW1hcnkgd2lkZVwiIGRpc2FibGVkPXtidXN5fT5cclxuICAgICAgICAgIHtidXN5XHJcbiAgICAgICAgICAgID8gXCJQbGVhc2Ugd2FpdOKAplwiXHJcbiAgICAgICAgICAgIDogbW9kZSA9PT0gXCJsb2dpblwiXHJcbiAgICAgICAgICAgICAgPyBcIlNpZ24gaW5cIlxyXG4gICAgICAgICAgICAgIDogbW9kZSA9PT0gXCJzaWdudXBcIlxyXG4gICAgICAgICAgICAgICAgPyBcIkNyZWF0ZSBhY2NvdW50XCJcclxuICAgICAgICAgICAgICAgIDogXCJVcGRhdGUgcGFzc3dvcmRcIn1cclxuICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICB7bW9kZSA9PT0gXCJsb2dpblwiICYmIChcclxuICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInRleHQtYnV0dG9uXCJcclxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4ge1xyXG4gICAgICAgICAgICAgIHNldE1vZGUoXCJmb3Jnb3RcIik7XHJcbiAgICAgICAgICAgICAgc2V0TWVzc2FnZShcIlwiKTtcclxuICAgICAgICAgICAgfX1cclxuICAgICAgICAgID5cclxuICAgICAgICAgICAgRm9yZ290IHBhc3N3b3JkP1xyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgKX1cclxuICAgICAgICA8cCBjbGFzc05hbWU9XCJzd2l0Y2hcIj5cclxuICAgICAgICAgIHttb2RlID09PSBcInNpZ251cFwiID8gXCJBbHJlYWR5IGhhdmUgYW4gYWNjb3VudD9cIiA6IFwiTmVlZCBhbiBhY2NvdW50P1wifXtcIiBcIn1cclxuICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHtcclxuICAgICAgICAgICAgICBzZXRNb2RlKG1vZGUgPT09IFwic2lnbnVwXCIgPyBcImxvZ2luXCIgOiBcInNpZ251cFwiKTtcclxuICAgICAgICAgICAgICBzZXRNZXNzYWdlKFwiXCIpO1xyXG4gICAgICAgICAgICB9fVxyXG4gICAgICAgICAgPlxyXG4gICAgICAgICAgICB7bW9kZSA9PT0gXCJzaWdudXBcIiA/IFwiU2lnbiBpblwiIDogXCJTaWduIHVwXCJ9XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L3A+XHJcbiAgICAgIDwvZm9ybT5cclxuICAgIDwvZGl2PlxyXG4gICk7XHJcbn1cclxuXHJcbmV4cG9ydCBkZWZhdWx0IEF1dGg7XHJcblxyXG4iXX0=
