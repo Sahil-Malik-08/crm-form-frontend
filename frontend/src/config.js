@@ -4,12 +4,19 @@
 export const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 
 export const nav = [
-  ["employees", "Users", "Employees"],
   ["users", "UserCheck", "Users"],
   ["assigned-forms", "ClipboardList", "Forms", "employee"],
   ["form-builder", "ClipboardList", "Form Builder", "admin"],
-  ["form-master", "ClipboardList", "Form Master", "admin"],
   ["form-responses", "ListChecks", "Form Responses", "admin"],
+  ["settings", "Settings", "Settings", "admin"],
+];
+
+export const SETTINGS_MASTERS = [
+  { key: "departments", label: "Department Master" },
+  { key: "roles", label: "Role Master" },
+  { key: "form-master", label: "Form Master" },
+  { key: "states", label: "State Master" },
+  { key: "cities", label: "City Master" },
 ];
 
 export const toTitleCase = (value = "") =>

@@ -49,6 +49,23 @@ export const departmentRoleData = {
     "supervisor",
     "executive",
   ],
+  Accounts: [
+    "Accountant",
+    "Senior Accountant",
+    "Accounts Executive",
+    "Accounts Manager",
+    "Accounts Payable Specialist",
+    "Accounts Receivable Specialist",
+    "Finance Manager",
+    "Finance Executive",
+    "Financial Analyst",
+    "Auditor",
+    "Internal Auditor",
+    "Tax Consultant",
+    "Payroll Executive",
+    "Bookkeeper",
+    "Cost Accountant",
+  ],
 };
 
 const toKey = (name) => String(name || "").trim().toLowerCase();

@@ -1,17 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { request } from "../config";
-import { Pencil, Trash2, Plus, Check, X, Search, MapPin, Globe, CalendarRange } from "lucide-react";
-import { useGlobalSettings } from "../context/GlobalSettingsContext";
-import { CURRENCIES, MONTHS, getFYLabel } from "../utils/settings";
-import { fetchStates, fetchCities, fetchDepartments, fetchRoles, fetchIndustries, addMaster, updateMaster, deleteMaster } from "../utils/masterData";
-
-const MASTERS = [
-  { key: "states", label: "State Master" },
-  { key: "cities", label: "City Master" },
-  { key: "departments", label: "Department Master" },
-  { key: "roles", label: "Role Master" },
-  { key: "industries", label: "Industry Master" },
-];
+import { Pencil, Trash2, Plus, Check, X, Search, MapPin } from "lucide-react";
+import { SETTINGS_MASTERS } from "../config";
+import { fetchStates, fetchCities, fetchDepartments, fetchRoles, addMaster, updateMaster, deleteMaster } from "../utils/masterData";
+import FormMaster from "./FormMaster";
 
 function MasterTable({ masterKey, label }) {
   const [rows, setRows] = useState([]);
@@ -42,8 +33,6 @@ function MasterTable({ masterKey, label }) {
         data = await fetchDepartments();
       } else if (masterKey === "roles") {
         data = await fetchRoles();
-      } else if (masterKey === "industries") {
-        data = await fetchIndustries();
       }
       setRows(data || []);
       if (masterKey === "cities") {
@@ -142,13 +131,6 @@ function MasterTable({ masterKey, label }) {
         .filter((r) => r.name.toLowerCase().includes(q))
         .map((d) => ({
           name: d.name,
-          isAdded: true,
-        }));
-    } else if (masterKey === "industries") {
-      results = rows
-        .filter((r) => r.name.toLowerCase().includes(q))
-        .map((ind) => ({
-          name: ind.name,
           isAdded: true,
         }));
     }
@@ -405,242 +387,34 @@ function MasterTable({ masterKey, label }) {
   );
 }
 
-function GlobalPreferences({ onBack }) {
-  const { settings, updateSettings } = useGlobalSettings();
-  const [currency, setCurrency] = useState(settings.currency);
-  const [fyStartMonth, setFyStartMonth] = useState(settings.fyStartMonth);
-  const [fyEndMonth, setFyEndMonth] = useState(settings.fyEndMonth);
-  const [fyYear, setFyYear] = useState(settings.fyYear);
-  const [saved, setSaved] = useState(false);
+function Settings({ activeMaster, auth }) {
+  const active = activeMaster || SETTINGS_MASTERS[0].key;
 
-  const currentYear = new Date().getFullYear();
-  const yearOptions = [];
-  for (let y = currentYear - 2; y <= currentYear + 1; y += 1) yearOptions.push(y);
-
-  const fyLabel = getFYLabel(fyStartMonth, fyEndMonth, fyYear);
-
-  const save = () => {
-    updateSettings({
-      currency,
-      fyStartMonth: Number(fyStartMonth),
-      fyEndMonth: Number(fyEndMonth),
-      fyYear: Number(fyYear),
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const fieldStyle = {
-    width: "100%",
-    padding: "9px 12px",
-    border: "1px solid var(--color-border)",
-    borderRadius: 8,
-    font: "inherit",
-    fontSize: 13,
-    background: "var(--color-surface-card)",
-    color: "var(--color-text-primary)",
-  };
-
-  return (
-    <>
-      <div className="title">
-        <div>
-          <h1>Global Preferences</h1>
-          <p>Configure currency and financial year used across the application.</p>
-        </div>
-        {onBack && (
-          <button className="primary" style={{ height: 38 }} onClick={onBack}>← Back</button>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 style={{ margin: "0 0 18px", fontSize: 16, fontWeight: 700, color: "var(--color-text-primary)" }}>
-          Display &amp; Financial Year
-        </h2>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
-          {/* Currency */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: 8 }}>
-              <Globe size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-              Currency
-            </label>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={fieldStyle}>
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol} {c.label} ({c.code})
-                </option>
-              ))}
-            </select>
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>
-              Applied everywhere: amounts, charts, and reports.
-            </p>
-          </div>
-
-          {/* Financial year start month */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: 8 }}>
-              <CalendarRange size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-              Financial Year Starts In
-            </label>
-            <select value={fyStartMonth} onChange={(e) => setFyStartMonth(Number(e.target.value))} style={fieldStyle}>
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i}>{m}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Financial year end month */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: 8 }}>
-              <CalendarRange size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-              Financial Year Ends In
-            </label>
-            <select value={fyEndMonth} onChange={(e) => setFyEndMonth(Number(e.target.value))} style={fieldStyle}>
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i}>{m}</option>
-              ))}
-            </select>
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>
-              Usually one month before the start month.
-            </p>
-          </div>
-
-          {/* Financial year */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: 8 }}>
-              Financial Year
-            </label>
-            <select value={fyYear} onChange={(e) => setFyYear(Number(e.target.value))} style={fieldStyle}>
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>
-              Defaults to the current financial year.
-            </p>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 20,
-            padding: "12px 16px",
-            borderRadius: 10,
-            background: "var(--color-primary-50, #eff6ff)",
-            border: "1px solid var(--color-border)",
-            fontSize: 13,
-            color: "var(--color-text-primary)",
-            fontWeight: 500,
-          }}
-        >
-          Selected financial year: <strong>{fyLabel}</strong>
-        </div>
-
-        <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12 }}>
-          <button className="primary" onClick={save}>Save Preferences</button>
-          {saved && (
-            <span style={{ color: "#16a34a", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Check size={14} /> Saved
-            </span>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-function Settings({ activeMaster, onMasterChange }) {
-  const [active, setActive] = useState(activeMaster);
-  useEffect(() => { if (activeMaster) setActive(activeMaster); }, [activeMaster]);
-
-  const handleSelect = (master) => {
-    setActive(master);
-    onMasterChange?.(master);
-  };
-
-  if (!active) {
+  if (active === "form-master") {
     return (
       <>
         <div className="title">
           <div>
-            <h1>Settings</h1>
-            <p>Select a master to manage.</p>
+            <h1>Form Master</h1>
+            <p>Manage master data for your organization.</p>
           </div>
         </div>
-        <div className="card">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
-            {MASTERS.map((master) => (
-              <button
-                key={master.key}
-                onClick={() => handleSelect(master.key)}
-                style={{
-                  padding: 24,
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 12,
-                  background: "var(--color-surface-card)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#3b82f6";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(59,130,246,0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--color-border)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "var(--color-text-primary)" }}>{master.label}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>Manage {master.label.toLowerCase()}</p>
-              </button>
-            ))}
-            <button
-              key="global"
-              onClick={() => handleSelect("global")}
-              style={{
-                padding: 24,
-                border: "1px solid var(--color-border)",
-                borderRadius: 12,
-                background: "linear-gradient(135deg, #eff6ff, #f0fdf4)",
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#3b82f6";
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(59,130,246,0.15)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--color-border)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "var(--color-text-primary)" }}>Global Preferences</h3>
-              <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>Currency &amp; financial year</p>
-            </button>
-          </div>
-        </div>
+        <FormMaster auth={auth} />
       </>
     );
   }
 
-  if (active === "global") {
-    return <GlobalPreferences onBack={() => setActive(null)} />;
-  }
-  const current = MASTERS.find((m) => m.key === active);
+  const current = SETTINGS_MASTERS.find((m) => m.key === active);
 
   return (
     <>
       <div className="title">
         <div>
-          <h1>Settings</h1>
+          <h1>{current.label}</h1>
           <p>Manage master data for your organization.</p>
         </div>
       </div>
       <div className="card">
-          <h2 style={{ margin: "0 0 18px", fontSize: 16, fontWeight: 700, color: "var(--color-text-primary)" }}>{current.label}</h2>
           <MasterTable key={active} masterKey={active} label={current.label} />
       </div>
     </>

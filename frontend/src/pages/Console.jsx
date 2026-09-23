@@ -1,29 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { nav } from "../config";
+import { nav, SETTINGS_MASTERS } from "../config";
 import {
   Bell, Moon, Sun, Menu, ChevronLeft, LogOut, User,
-  ChevronDown, Maximize, Minimize, Users, UserRound, ClipboardList, ListChecks
+  ChevronDown, Maximize, Minimize, Users, UserRound, ClipboardList, ListChecks, Settings as SettingsIcon
 } from "lucide-react";
 import { isAdminUser } from "../utils/employeeForms";
 import { GlobalSettingsProvider } from "../context/GlobalSettingsContext";
 import Profile from "./Profile";
-import Employees from "./Employees";
 import FormBuilder from "./FormBuilder";
-import FormMaster from "./FormMaster";
 import FormResponses from "./FormResponses";
 import AssignedForms from "./AssignedForms";
 import UsersPage from "./Users";
+import Settings from "./Settings";
 
 const iconMap = {
   Users,
   UserRound,
   ClipboardList,
   ListChecks,
+  Settings: SettingsIcon,
 };
 
 function Console({ auth, logout }) {
-  const [page, setPage] = useState("employees"),
+  const [page, setPage] = useState("users"),
     [data, setData] = useState({}),
     [add, setAdd] = useState(false),
     [record, setRecord] = useState(null),
@@ -33,13 +33,15 @@ function Console({ auth, logout }) {
     [darkMode, setDarkMode] = useState(() =>
       localStorage.getItem("dashboardTheme") === "dark"
     ),
-    [, setPageHistory] = useState(["employees"]),
+    [, setPageHistory] = useState(["users"]),
     [loading, setLoading] = useState(false),
     [hoveredNav, setHoveredNav] = useState(null),
     [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 }),
     [tooltipAlign, setTooltipAlign] = useState("center"),
     [scrolled, setScrolled] = useState(false),
-    [isFullscreen, setIsFullscreen] = useState(false);
+    [isFullscreen, setIsFullscreen] = useState(false),
+    [settingsOpen, setSettingsOpen] = useState(false),
+    [settingsMaster, setSettingsMaster] = useState(SETTINGS_MASTERS[0].key);
 
   const profileMenuRef = useRef(null);
   const notifMenuRef = useRef(null);
@@ -117,6 +119,7 @@ function Console({ auth, logout }) {
     if (hash && validPages.includes(hash)) {
       setPage(hash);
       setPageHistory((prev) => [...prev, hash]);
+      if (hash === "settings") setSettingsOpen(true);
     }
     // Only resolve the initial hash on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -194,6 +197,46 @@ const navigate = (key) => {
         <nav className="sidebar-nav">
           {visibleNav.map(([key, iconName, name]) => {
             const Icon = iconMap[iconName] || Users;
+
+            if (key === "settings") {
+              return (
+                <div key={key}>
+                  <button
+                    className={page === "settings" ? "active" : ""}
+                    onClick={() => setSettingsOpen((open) => !open)}
+                    onMouseEnter={(e) => {
+                      if (!collapsed) return;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setTooltipPos({ top: rect.top - 36, left: rect.left + rect.width / 2 });
+                      setTooltipAlign("center");
+                      setHoveredNav(name);
+                    }}
+                    onMouseLeave={() => { setHoveredNav(null); setTooltipAlign("center"); }}
+                  >
+                    <span className="nav-icon"><Icon size={18} /></span>
+                    <span className="nav-text">{name}</span>
+                    <ChevronDown size={14} className={`settings-chevron${settingsOpen ? " open" : ""}`} />
+                  </button>
+                  {settingsOpen && (
+                    <div className="master-submenu">
+                      {SETTINGS_MASTERS.map((master) => (
+                        <button
+                          key={master.key}
+                          className={page === "settings" && settingsMaster === master.key ? "active" : ""}
+                          onClick={() => {
+                            setSettingsMaster(master.key);
+                            navigate("settings");
+                          }}
+                        >
+                          {master.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <button
                 key={key}
@@ -250,8 +293,8 @@ const navigate = (key) => {
                 ? "Profile"
                 : page === "form-builder"
                   ? "Form Builder"
-                  : page === "form-master"
-                    ? "Form Master"
+                  : page === "settings"
+                    ? "Settings"
                   : page[0].toUpperCase() + page.slice(1)}
             </span>
           </div>
@@ -354,19 +397,22 @@ const navigate = (key) => {
             />
           ) : page === "form-builder" ? (
             <FormBuilder auth={auth} />
-          ) : page === "form-master" ? (
-            <FormMaster auth={auth} />
+          ) : page === "settings" ? (
+            <Settings auth={auth} activeMaster={settingsMaster} />
           ) : page === "form-responses" ? (
             <FormResponses auth={auth} />
           ) : page === "assigned-forms" ? (
             <AssignedForms auth={auth} />
           ) : (
-            <Employees
-              auth={auth}
+            <UsersPage
+              list={[]}
+              employees={[]}
               add={add}
               setAdd={setAdd}
               setRecord={setRecord}
               record={record}
+              remove={null}
+              load={load}
             />
           )}
         </section>
