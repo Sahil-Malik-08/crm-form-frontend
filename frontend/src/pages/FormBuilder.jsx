@@ -248,12 +248,7 @@ function FormBuilder({ auth }) {
         approvedBy: builder.approvedBy,
         fields: validFields.map(({ id, label, type, required, options, masterKey }) => {
           if (type !== "master") return { id, label: label.trim(), type, required, options };
-          const field = { id, label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) };
-          if (masterKey === "cities") {
-            const stateNameById = Object.fromEntries((masters.states || []).map((state) => [state.id, state.name]));
-            field.cityStateMap = Object.fromEntries((masters.cities || []).map((city) => [city.name, city.stateName || stateNameById[city.stateId]]));
-          }
-          return field;
+          return { id, label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) };
         }),
       };
       if (editingFormId) await updateForm(editingFormId, payload);
