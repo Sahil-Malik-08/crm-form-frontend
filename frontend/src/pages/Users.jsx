@@ -140,8 +140,8 @@ function Users({ add, setAdd, setRecord, record, employees = [] }) {
     <>
       {add && <UserAdd complete={() => { setAdd(false); fetchPage(1); }} employees={employees} />}
       {!add && (
-        <div className="card" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+        <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, gap: 18 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button onClick={() => window.history.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
                 <ArrowLeft size={22} />
@@ -158,6 +158,7 @@ function Users({ add, setAdd, setRecord, record, employees = [] }) {
               <button className="primary" onClick={() => setAdd(!add)}>＋ Add</button>
             </div>
           </div>
+          <div className="card page-card" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
           <FilterPanel fields={fields} filters={filters} onApply={applyFilters} onReset={handleReset} activeCount={activeCount} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
             {loading ? (
               <div style={{ display: "grid", placeItems: "center", minHeight: 200, gap: 10 }}>
@@ -193,6 +194,7 @@ function Users({ add, setAdd, setRecord, record, employees = [] }) {
               </div>
             )}
           </FilterPanel>
+          </div>
         </div>
       )}
     </>

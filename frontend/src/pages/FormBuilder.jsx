@@ -157,9 +157,18 @@ function FormBuilder({ auth }) {
     if (key === "label" && errors.fields) setErrors((prev) => ({ ...prev, fields: false }));
   };
 
+  const selectFieldMaster = (index, masterKey) => {
+    setBuilder((prev) => ({
+      ...prev,
+      fields: prev.fields.map((field, fieldIndex) => (
+        fieldIndex === index ? { ...field, masterKey, label: MASTER_OPTIONS[masterKey] || field.label } : field
+      )),
+    }));
+  };
+
   const updateFieldType = (index, type) => {
     updateField(index, "type", type);
-    if (type === "master" && !builder.fields[index]?.masterKey) updateField(index, "masterKey", "departments");
+    if (type === "master" && !builder.fields[index]?.masterKey) selectFieldMaster(index, "departments");
     if (["select", "multiselect", "checkbox"].includes(type) && !(builder.fields[index]?.options || []).length) {
       updateField(index, "options", ["Option 1", "Option 2"]);
     }
@@ -237,9 +246,15 @@ function FormBuilder({ auth }) {
         title: builder.title.trim(),
         assignedTo: builder.assignedTo,
         approvedBy: builder.approvedBy,
-        fields: validFields.map(({ id, label, type, required, options, masterKey }) => (type === "master"
-          ? { id, label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) }
-          : { id, label: label.trim(), type, required, options })),
+        fields: validFields.map(({ id, label, type, required, options, masterKey }) => {
+          if (type !== "master") return { id, label: label.trim(), type, required, options };
+          const field = { id, label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) };
+          if (masterKey === "cities") {
+            const stateNameById = Object.fromEntries((masters.states || []).map((state) => [state.id, state.name]));
+            field.cityStateMap = Object.fromEntries((masters.cities || []).map((city) => [city.name, city.stateName || stateNameById[city.stateId]]));
+          }
+          return field;
+        }),
       };
       if (editingFormId) await updateForm(editingFormId, payload);
       else await createForm(payload);
@@ -313,13 +328,13 @@ function FormBuilder({ auth }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, minHeight: 0 }}>
+    <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
       <div className="fb-page-head">
-        <div>
-          <div style={{ color: "var(--color-text-muted)", fontSize: 12, textTransform: "uppercase", letterSpacing: 1.2 }}>
-            Admin portal
-          </div>
-          <h1 style={{ margin: "6px 0 0", fontSize: 28, fontWeight: 800 }}>Contact</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => window.history.back()} aria-label="Go back" title="Go back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+            <ArrowLeft size={22} />
+          </button>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>Admin portal</h1>
         </div>
         <div className="fb-tabs" role="tablist">
           <button role="tab" aria-selected={activeTab === "builder"} className={activeTab === "builder" ? "active" : ""} onClick={() => setActiveTab("builder")}>
@@ -340,12 +355,6 @@ function FormBuilder({ auth }) {
 
       {activeTab === "builder" ? (
         <form className="card ef-card" onSubmit={saveForm} noValidate>
-          <div className="ef-header">
-            <div>
-              <h3 className="ef-title">{editingFormId ? "Edit form" : "Create a new form"}</h3>
-            </div>
-          </div>
-
           <div className="ef-scroll-body">
           <div className="ef-body">
             <div className="ef-field full">
@@ -419,7 +428,7 @@ function FormBuilder({ auth }) {
                   {field.type === "master" && (
                     <div className="ef-field">
                       <label className="ef-label" htmlFor={`fb-master-${field.id}`}>Master</label>
-                      <select id={`fb-master-${field.id}`} className="ef-input" value={field.masterKey || "departments"} onChange={(event) => updateField(index, "masterKey", event.target.value)}>
+                      <select id={`fb-master-${field.id}`} className="ef-input" value={field.masterKey || "departments"} onChange={(event) => selectFieldMaster(index, event.target.value)}>
                         {Object.entries(MASTER_OPTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </div>

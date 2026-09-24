@@ -100,9 +100,18 @@ function FormMaster({ auth }) {
     if (key === "label" && builderErrors.fields) setBuilderErrors((prev) => ({ ...prev, fields: false }));
   };
 
+  const selectFieldMaster = (index, masterKey) => {
+    setBuilder((prev) => ({
+      ...prev,
+      fields: prev.fields.map((field, fieldIndex) => (
+        fieldIndex === index ? { ...field, masterKey, label: MASTER_OPTIONS[masterKey] || field.label } : field
+      )),
+    }));
+  };
+
   const updateFieldType = (index, type) => {
     updateField(index, "type", type);
-    if (type === "master" && !builder.fields[index]?.masterKey) updateField(index, "masterKey", "departments");
+    if (type === "master" && !builder.fields[index]?.masterKey) selectFieldMaster(index, "departments");
     if (["select", "multiselect", "checkbox"].includes(type) && !(builder.fields[index]?.options || []).length) {
       updateField(index, "options", ["Option 1", "Option 2"]);
     }
@@ -167,9 +176,15 @@ function FormMaster({ auth }) {
         title: builder.title.trim(),
         assignedTo: builder.assignedTo,
         approvedBy: builder.approvedBy,
-        fields: validFields.map(({ label, type, required, options, masterKey }) => (type === "master"
-          ? { label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) }
-          : { label: label.trim(), type, required, options })),
+        fields: validFields.map(({ label, type, required, options, masterKey }) => {
+          if (type !== "master") return { label: label.trim(), type, required, options };
+          const field = { label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) };
+          if (masterKey === "cities") {
+            const stateNameById = Object.fromEntries((masters.states || []).map((state) => [state.id, state.name]));
+            field.cityStateMap = Object.fromEntries((masters.cities || []).map((city) => [city.name, city.stateName || stateNameById[city.stateId]]));
+          }
+          return field;
+        }),
       };
       if (editingTemplateId) await updateFormTemplate(editingTemplateId, payload);
       else await createFormTemplate(payload);
@@ -354,7 +369,7 @@ function FormMaster({ auth }) {
                     {field.type === "master" && (
                       <div className="ef-field">
                         <label className="ef-label" htmlFor={`fm-master-${field.id}`}>Master</label>
-                        <select id={`fm-master-${field.id}`} className="ef-input" value={field.masterKey || "departments"} onChange={(event) => updateField(index, "masterKey", event.target.value)}>
+                        <select id={`fm-master-${field.id}`} className="ef-input" value={field.masterKey || "departments"} onChange={(event) => selectFieldMaster(index, event.target.value)}>
                           {Object.entries(MASTER_OPTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </select>
                       </div>
@@ -425,25 +440,25 @@ function FormMaster({ auth }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
-      <div className="card" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={() => window.history.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
-              <ArrowLeft size={22} />
-            </button>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>Form Master</h1>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="search-bar" style={{ width: 320, margin: 0 }}>
-              <Search size={16} className="text-slate-400" />
-              <input placeholder="Search forms..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} />
-            </div>
-            <button className="primary" onClick={() => setShowAdd(true)}>＋ Add</button>
+    <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>Form Master</h1>
           </div>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="search-bar" style={{ width: 320, margin: 0 }}>
+            <Search size={16} className="text-slate-400" />
+            <input placeholder="Search forms..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} />
+          </div>
+          <button className="primary" onClick={() => setShowAdd(true)}>＋ Add</button>
+        </div>
+      </div>
+      <div className="card page-card" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
 
         {templatesLoading ? (
           <div style={{ display: "grid", placeItems: "center", minHeight: 200, gap: 10 }}>

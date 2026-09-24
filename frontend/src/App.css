@@ -647,12 +647,18 @@ main {
 .section-content {
   display: flex;
   flex-direction: column;
-  padding: 24px 28px;
+  /* No bottom padding: the page card's bottom edge lines up with the sidebar's. */
+  padding: 24px 28px 0;
   width: 100%;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* Pages whose title row sits above the card start right under the top navbar. */
+.section-content:has(> .page-with-title-row) {
+  padding-top: 0;
 }
 
 .section-content.orders-section {
@@ -2118,6 +2124,17 @@ textarea.ef-input {
   gap: 12px;
   padding: 8px 0 !important;
   background: var(--color-surface-card);
+}
+
+/* List page card (below a .page-with-title-row title): pagination sits snug under the table
+   instead of in a header-height bar. */
+.page-card {
+  padding-bottom: 12px;
+}
+
+.page-card .data-table-pagination {
+  height: auto;
+  padding: 12px 0 0 !important;
 }
 
 .data-table-card,

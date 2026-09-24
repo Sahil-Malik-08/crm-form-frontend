@@ -61,9 +61,9 @@ function DataTable({
   const head = { ...cell, background: "var(--color-surface)", cursor: "pointer", userSelect: "none" };
 
   return (
-    <div className="card data-table-card" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--color-text-primary)" }}>{title}</h2>
+    // The page title sits above the card (Users Management layout), so the card opens with its controls.
+    <div className="card data-table-card page-card" aria-label={title} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {statusFilter && (
             <select aria-label="Filter by status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} style={{ ...selectStyle, padding: "9px 12px", fontSize: 13 }}>

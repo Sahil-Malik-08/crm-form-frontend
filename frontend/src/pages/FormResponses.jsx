@@ -122,8 +122,8 @@ function FormResponses({ auth }) {
   const tableWidth = columns.length * COLUMN_WIDTH + ACTIONS_WIDTH;
 
   return (
-    <div className="card form-responses-card" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+    <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => window.history.back()} aria-label="Back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
             <ArrowLeft size={22} />
@@ -135,84 +135,86 @@ function FormResponses({ auth }) {
           <input placeholder="Search response..." value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
         </div>
       </div>
+      <div className="card form-responses-card page-card" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, overflow: "hidden" }}>
 
-      <FilterPanel fields={fields} filters={filters} onApply={applyFilters} onReset={resetFilters} activeCount={activeCount} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-        {loading ? (
-          <div style={{ display: "grid", placeItems: "center", minHeight: 200, gap: 10 }}>
-            <div className="spinner" />
-            <div style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Loading responses...</div>
-          </div>
-        ) : error ? (
-          <div className="fb-notice error">{error}</div>
-        ) : filtered.length === 0 ? (
-          <div className="no-results">
-            <SearchX size={64} />
-            <h3>{rows.length === 0 ? "No responses yet" : "No responses found"}</h3>
-            <p>{rows.length === 0 ? "Filled-in forms from employees will be listed here." : "Try adjusting your search or filter criteria."}</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-            <div style={{ overflowX: "auto", overflowY: "hidden", flex: 1, minHeight: 0 }}>
-              <div style={{ minWidth: tableWidth, display: "grid", gridTemplateRows: "auto 1fr", height: "100%" }}>
-                <table className="modern-table" style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed", flexShrink: 0 }}>
-                  <thead>
-                    <tr>
-                      {columns.map((col) => (
-                        <th key={col.key} style={headerStyle} onClick={() => toggleSort(col.key)}>
-                          {col.label}
-                          <span style={{ marginLeft: 4, fontSize: 10 }}>{sortIcon(col.key)}</span>
-                        </th>
-                      ))}
-                      <th style={{ ...headerStyle, width: ACTIONS_WIDTH, cursor: "default" }}>Actions</th>
-                    </tr>
-                  </thead>
-                </table>
-                <div className="table-container" style={{ overflowY: "auto", overflowX: "hidden", minHeight: 0 }}>
-                  <table className="modern-table" style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
-                    <tbody>
-                      {visible.map((row) => (
-                        <tr key={row.id} onClick={() => setViewing(row)} style={{ cursor: "pointer" }}>
-                          {columns.map((col) => (
-                            <td key={col.key} style={{ textAlign: "center", width: COLUMN_WIDTH }}>{col.render ? col.render(row) : col.value(row) || "—"}</td>
-                          ))}
-                          <td style={{ textAlign: "center", width: ACTIONS_WIDTH }}>
-                            <div className="row-actions" style={{ justifyContent: "center", gap: 6 }}>
-                              <button className="row-action-btn view" aria-label="View response" onClick={(event) => { event.stopPropagation(); setViewing(row); }}><Eye size={14} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+        <FilterPanel fields={fields} filters={filters} onApply={applyFilters} onReset={resetFilters} activeCount={activeCount} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          {loading ? (
+            <div style={{ display: "grid", placeItems: "center", minHeight: 200, gap: 10 }}>
+              <div className="spinner" />
+              <div style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Loading responses...</div>
+            </div>
+          ) : error ? (
+            <div className="fb-notice error">{error}</div>
+          ) : filtered.length === 0 ? (
+            <div className="no-results">
+              <SearchX size={64} />
+              <h3>{rows.length === 0 ? "No responses yet" : "No responses found"}</h3>
+              <p>{rows.length === 0 ? "Filled-in forms from employees will be listed here." : "Try adjusting your search or filter criteria."}</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+              <div style={{ overflowX: "auto", overflowY: "hidden", flex: 1, minHeight: 0 }}>
+                <div style={{ minWidth: tableWidth, display: "grid", gridTemplateRows: "auto 1fr", height: "100%" }}>
+                  <table className="modern-table" style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed", flexShrink: 0 }}>
+                    <thead>
+                      <tr>
+                        {columns.map((col) => (
+                          <th key={col.key} style={headerStyle} onClick={() => toggleSort(col.key)}>
+                            {col.label}
+                            <span style={{ marginLeft: 4, fontSize: 10 }}>{sortIcon(col.key)}</span>
+                          </th>
+                        ))}
+                        <th style={{ ...headerStyle, width: ACTIONS_WIDTH, cursor: "default" }}>Actions</th>
+                      </tr>
+                    </thead>
                   </table>
+                  <div className="table-container" style={{ overflowY: "auto", overflowX: "hidden", minHeight: 0 }}>
+                    <table className="modern-table" style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
+                      <tbody>
+                        {visible.map((row) => (
+                          <tr key={row.id} onClick={() => setViewing(row)} style={{ cursor: "pointer" }}>
+                            {columns.map((col) => (
+                              <td key={col.key} style={{ textAlign: "center", width: COLUMN_WIDTH }}>{col.render ? col.render(row) : col.value(row) || "—"}</td>
+                            ))}
+                            <td style={{ textAlign: "center", width: ACTIONS_WIDTH }}>
+                              <div className="row-actions" style={{ justifyContent: "center", gap: 6 }}>
+                                <button className="row-action-btn view" aria-label="View response" onClick={(event) => { event.stopPropagation(); setViewing(row); }}><Eye size={14} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="pagination-controls data-table-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0 0", marginTop: 8, borderTop: "1px solid var(--color-border)", flexWrap: "wrap", gap: 12, flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={mutedText}>Per Page</span>
-                  <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }} style={selectStyle}>
-                    {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size}</option>)}
-                  </select>
+              <div className="pagination-controls data-table-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0 0", marginTop: 8, borderTop: "1px solid var(--color-border)", flexWrap: "wrap", gap: 12, flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={mutedText}>Per Page</span>
+                    <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }} style={selectStyle}>
+                      {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size}</option>)}
+                    </select>
+                  </div>
+                  <span style={mutedText}>Total Page {totalPages}</span>
+                  <span style={mutedText}>Total Responses {filtered.length}</span>
                 </div>
-                <span style={mutedText}>Total Page {totalPages}</span>
-                <span style={mutedText}>Total Responses {filtered.length}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button className="primary" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} style={{ opacity: safePage <= 1 ? 0.5 : 1 }}>Previous</button>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={mutedText}>Page</span>
-                  <select value={safePage} onChange={(event) => setPage(Number(event.target.value))} style={selectStyle}>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button className="primary" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} style={{ opacity: safePage <= 1 ? 0.5 : 1 }}>Previous</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={mutedText}>Page</span>
+                    <select value={safePage} onChange={(event) => setPage(Number(event.target.value))} style={selectStyle}>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <button className="primary" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)} style={{ opacity: safePage >= totalPages ? 0.5 : 1 }}>Next</button>
                 </div>
-                <button className="primary" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)} style={{ opacity: safePage >= totalPages ? 0.5 : 1 }}>Next</button>
               </div>
             </div>
-          </div>
-        )}
-      </FilterPanel>
+          )}
+        </FilterPanel>
+      </div>
     </div>
   );
 }
