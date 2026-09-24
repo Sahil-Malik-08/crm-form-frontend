@@ -30,6 +30,8 @@ function AssignedForms({ auth }) {
   const [viewing, setViewing] = useState(null);
   const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(null);
+  // The Assigned forms tab lists the forms; clicking one opens just that form to fill in.
+  const [openFormId, setOpenFormId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -82,6 +84,7 @@ function AssignedForms({ auth }) {
       await submitFormResponse(form.id, answers);
       setMessage({ type: "success", text: "Response submitted successfully." });
       await load();
+      setOpenFormId(null);
       setTab("responses");
     } catch (error) {
       setMessage({ type: "error", text: error.message });
@@ -94,6 +97,10 @@ function AssignedForms({ auth }) {
   const responseRows = toResponseRows(responseForms, { mine: true });
   const approvalRows = toResponseRows(approvals);
   const pendingApprovalCount = approvalRows.filter((row) => row.response.status !== "approved").length;
+  const openForm = tab === "assigned" ? forms.find((form) => form.id === openFormId) : null;
+  const formStatus = (form) => (form.myResponse?.status === "approved" ? "Approved" : form.myResponse ? "Pending" : "Not submitted");
+  const assignedRows = forms.map((form) => ({ id: form.id, form, title: form.title, approver: form.approvedByName || "Supervisor", fields: (form.fields || []).length, status: formStatus(form), submittedAt: form.myResponse?.submittedAt }));
+  const changeTab = (next) => { setTab(next); setOpenFormId(null); };
 
   const changeStatus = async (row, status) => {
     try {
@@ -120,15 +127,15 @@ function AssignedForms({ auth }) {
     <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
       <div className="fb-page-head">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => window.history.back()} aria-label="Go back" title="Go back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+          <button onClick={() => (openForm ? setOpenFormId(null) : window.history.back())} aria-label="Go back" title="Go back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
             <ArrowLeft size={22} />
           </button>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>Forms</h1>
         </div>
         <div className="fb-tabs" role="tablist">
-          <button role="tab" aria-selected={tab === "assigned"} className={tab === "assigned" ? "active" : ""} onClick={() => setTab("assigned")}><FileText size={15} /> Assigned forms <span className="fb-count">{forms.length}</span></button>
-          <button role="tab" aria-selected={tab === "responses"} className={tab === "responses" ? "active" : ""} onClick={() => setTab("responses")}><ClipboardList size={15} /> My responses <span className="fb-count">{responseForms.length}</span></button>
-          {approvals.length > 0 && <button role="tab" aria-selected={tab === "approvals"} className={tab === "approvals" ? "active" : ""} onClick={() => setTab("approvals")}><ClipboardCheck size={15} /> Approvals <span className="fb-count">{pendingApprovalCount}</span></button>}
+          <button role="tab" aria-selected={tab === "assigned"} className={tab === "assigned" ? "active" : ""} onClick={() => changeTab("assigned")}><FileText size={15} /> Assigned forms <span className="fb-count">{forms.length}</span></button>
+          <button role="tab" aria-selected={tab === "responses"} className={tab === "responses" ? "active" : ""} onClick={() => changeTab("responses")}><ClipboardList size={15} /> My responses <span className="fb-count">{responseForms.length}</span></button>
+          {approvals.length > 0 && <button role="tab" aria-selected={tab === "approvals"} className={tab === "approvals" ? "active" : ""} onClick={() => changeTab("approvals")}><ClipboardCheck size={15} /> Approvals <span className="fb-count">{pendingApprovalCount}</span></button>}
         </div>
       </div>
       {message && <div className={`fb-notice ${message.type}`}>{message.text}</div>}
@@ -154,7 +161,25 @@ function AssignedForms({ auth }) {
           emptyTitle="No responses submitted yet"
           emptyText="Submitted form responses will appear here."
         />
-      ) : forms.length ? forms.map((form) => {
+      ) : !openForm ? (
+        <DataTable
+          title="Assigned forms"
+          noun="form"
+          searchPlaceholder="Search form..."
+          rows={assignedRows}
+          columns={[
+            { key: "title", label: "Form", value: (row) => row.title },
+            { key: "approver", label: "Approved by", value: (row) => row.approver },
+            { key: "fields", label: "Fields", value: (row) => row.fields, sortValue: (row) => row.fields },
+            { key: "submitted", label: "Submitted", value: (row) => (row.submittedAt ? new Date(row.submittedAt).toLocaleString() : ""), sortValue: (row) => (row.submittedAt ? new Date(row.submittedAt).getTime() : 0) },
+            { key: "status", label: "Status", value: (row) => row.status, render: (row) => <span className={`ef-status${row.status === "Approved" ? " done" : ""}`}>{row.status === "Approved" ? <CheckCircle2 size={14} /> : <Clock size={14} />} {row.status}</span> },
+          ]}
+          onRowClick={(row) => setOpenFormId(row.id)}
+          renderActions={(row) => <button type="button" className="row-action-btn view" aria-label={`Open ${row.title}`} title="Open form" onClick={() => setOpenFormId(row.id)}><Eye size={14} /></button>}
+          emptyTitle="No forms assigned"
+          emptyText="Your manager has not assigned any forms to you yet."
+        />
+      ) : [openForm].map((form) => {
         const approved = form.myResponse?.status === "approved";
         const draft = drafts[form.id] || {};
         return (
@@ -186,7 +211,7 @@ function AssignedForms({ auth }) {
             <div className="ef-footer"><span className="ef-footer-note">{approved ? "This response is approved." : <><span className="ef-required">*</span> Required fields</>}</span><button className="primary" disabled={approved || saving === form.id}>{saving === form.id ? "Submitting..." : "Submit response"}</button></div>
           </form>
         );
-      }) : <div className="card" style={{ padding: 18 }}><h3 style={{ margin: 0 }}>No forms assigned</h3><p>Your manager has not assigned any forms to you yet.</p></div>}
+      })}
     </div>
   );
 }
