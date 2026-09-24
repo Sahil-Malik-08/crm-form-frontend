@@ -1,7 +1,7 @@
 import UserForm from "./UserForm";
 
-function UserAdd({ complete, employees = [] }) {
-  return <UserForm complete={complete} employees={employees} />;
+function UserAdd({ complete, onBack, employees = [] }) {
+  return <UserForm complete={complete} onBack={onBack} employees={employees} />;
 }
 
 export default UserAdd;

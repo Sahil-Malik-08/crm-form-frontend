@@ -138,7 +138,7 @@ function Users({ add, setAdd, setRecord, record, employees = [] }) {
   }
   return (
     <>
-      {add && <UserAdd complete={() => { setAdd(false); fetchPage(1); }} employees={employees} />}
+      {add && <UserAdd complete={() => { setAdd(false); fetchPage(1); }} onBack={() => setAdd(false)} employees={employees} />}
       {!add && (
         <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, gap: 18 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>

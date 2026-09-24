@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { request } from "../config";
 import Field from "../components/Field";
 import SearchSelect from "../components/SearchSelect";
@@ -72,27 +73,41 @@ function UserForm({ record, complete, onBack, employees = [] }) {
   };
 
   return (
-    <form className="form card" onSubmit={save} autoComplete="off">
-      <h2>{isEdit ? "Edit User" : "New User"}</h2>
-      {error && <p style={{ gridColumn: "1 / -1", margin: "0 0 10px", color: "#b91c1c", fontSize: 13 }}>{error}</p>}
-      <label>Full Name <span className="required-marker">*</span>
-        <SearchSelect value={selectedEmployeeId} options={employeeOptions} onChange={selectEmployee} placeholder="Select employee" searchPlaceholder="Search employee..." style={{ marginTop: 6 }} />
-      </label>
-      <Field label="Phone" value={form.phone} change={(value) => update("phone", value)} autoComplete="tel" />
-      <Field label="Username / Email" value={form.username} change={(value) => update("username", value)} autoComplete="username" />
-      <Field label="Password" type="password" value={form.password} required={!isEdit} change={(value) => update("password", value)} autoComplete={isEdit ? "new-password" : "new-password"} />
-      <Field label="Department" type="select" value={form.department} options={(masters.departments || []).map(({ name }) => ({ value: name, label: name }))} change={(value) => setForm((previous) => ({ ...previous, department: value, role: "" }))} />
-      <Field label="Role" type="select" value={form.role} options={availableRoles.map(({ name }) => ({ value: name, label: name }))} change={(value) => update("role", value)} />
-      <label>Reporting To
-        <SearchSelect value={form.reportingTo} options={employeeOptions} onChange={(value) => update("reportingTo", value)} placeholder="Select employee" searchPlaceholder="Search employee..." style={{ marginTop: 6 }} />
-      </label>
-      <Field label="Branches" type="select" value={form.branch} options={branchOptions} required={false} change={(value) => update("branch", value)} />
-      <Field label="Status" type="select" value={form.status} options={["Active", "Inactive"].map((value) => ({ value, label: value }))} change={(value) => update("status", value)} />
-      <div className="form-actions">
-        {onBack && <button type="button" className="delete" onClick={onBack}>Cancel</button>}
-        <button className="primary" disabled={saving}>{saving ? "Saving..." : isEdit ? "Save User" : "Save User"}</button>
+    <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button type="button" onClick={onBack || (() => window.history.back())} aria-label="Go back" title="Go back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+          <ArrowLeft size={22} />
+        </button>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>{isEdit ? "Edit User" : "New User"}</h1>
       </div>
-    </form>
+      <form className="card ef-card" onSubmit={save} autoComplete="off" noValidate>
+        <div className="ef-scroll-body">
+          <div className="form" style={{ padding: "24px 28px", margin: 0 }}>
+            {error && <p style={{ gridColumn: "1 / -1", margin: 0, color: "#b91c1c", fontSize: 13 }}>{error}</p>}
+            <label>Full Name <span className="required-marker">*</span>
+              <SearchSelect value={selectedEmployeeId} options={employeeOptions} onChange={selectEmployee} placeholder="Select employee" searchPlaceholder="Search employee..." style={{ marginTop: 6 }} />
+            </label>
+            <Field label="Phone" value={form.phone} change={(value) => update("phone", value)} autoComplete="tel" />
+            <Field label="Username / Email" value={form.username} change={(value) => update("username", value)} autoComplete="username" />
+            <Field label="Password" type="password" value={form.password} required={!isEdit} change={(value) => update("password", value)} autoComplete={isEdit ? "new-password" : "new-password"} />
+            <Field label="Department" type="select" value={form.department} options={(masters.departments || []).map(({ name }) => ({ value: name, label: name }))} change={(value) => setForm((previous) => ({ ...previous, department: value, role: "" }))} />
+            <Field label="Role" type="select" value={form.role} options={availableRoles.map(({ name }) => ({ value: name, label: name }))} change={(value) => update("role", value)} />
+            <label>Reporting To
+              <SearchSelect value={form.reportingTo} options={employeeOptions} onChange={(value) => update("reportingTo", value)} placeholder="Select employee" searchPlaceholder="Search employee..." style={{ marginTop: 6 }} />
+            </label>
+            <Field label="Branches" type="select" value={form.branch} options={branchOptions} required={false} change={(value) => update("branch", value)} />
+            <Field label="Status" type="select" value={form.status} options={["Active", "Inactive"].map((value) => ({ value, label: value }))} change={(value) => update("status", value)} />
+          </div>
+        </div>
+        <div className="ef-footer">
+          <span className="ef-footer-note"><span className="ef-required">*</span> Required fields</span>
+          <div className="ef-actions">
+            {onBack && <button type="button" className="ef-btn-secondary" onClick={onBack}>Cancel</button>}
+            <button className="primary" disabled={saving}>{saving ? "Saving..." : "Save User"}</button>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }
 
