@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClipboardList, FileText, ListChecks, Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, ClipboardList, Clock, Eye, FileText, Layers, ListChecks, Lock, Pencil, Plus, Trash2, User, UserCog } from "lucide-react";
+import { useMasters } from "../hooks/useMasters";
 import DataTable from "../components/DataTable";
 import FormResponseDetail from "../components/FormResponseDetail";
 import { responseColumns, toResponseRows } from "../components/responseTable";
@@ -28,13 +29,90 @@ const DEFAULT_TEMPLATES = [
   { id: "employee-default", title: "Employee Form", fields: ["Full Name", "Employee Code", "Email", "Mobile Phone", "Department", "Job Title", "Branches", "Employee Type", "Gender", "Date Of Birth", "Marital Status", "Status"].map((label, index) => ({ id: index + 1, label, type: label === "Email" ? "email" : label === "Date Of Birth" ? "date" : "text", required: true })) },
 ];
 
-const FIELD_TYPE_LABELS = { text: "Normal", number: "Number", date: "Date", email: "Email", textarea: "Long text", checkbox: "Checkbox", select: "Dropdown", multiselect: "Multi-select" };
+const FIELD_TYPE_LABELS = { text: "Normal", number: "Number", date: "Date", email: "Email", textarea: "Long text", checkbox: "Checkbox", select: "Dropdown", multiselect: "Multi-select", master: "Master" };
+const MASTER_OPTIONS = { departments: "Department", roles: "Role", states: "State", cities: "City" };
+
+// Detail view for one form: metadata strip plus a disabled preview of its fields, opened from the Forms list.
+function FormDetail({ form, employeeLookup, onBack, onEdit, onDelete }) {
+  const assignedToLabel = form.assignedTo === "all" || !form.assignedTo
+    ? "All employees"
+    : employeeLookup[String(form.assignedTo)] || "Employee";
+  const detailItems = [
+    { label: "Assigned to", value: assignedToLabel, icon: User },
+    { label: "Approved by", value: form.approvedByName || "Not selected", icon: CheckCircle2 },
+    { label: "Created by", value: form.createdByName || "—", icon: UserCog },
+    { label: "Created at", value: form.createdAt ? new Date(form.createdAt).toLocaleString() : "—", icon: Calendar },
+    { label: "Updated at", value: form.updatedAt ? new Date(form.updatedAt).toLocaleString() : "—", icon: Clock },
+    { label: "Fields", value: (form.fields || []).length, icon: Layers },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, minHeight: 0 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginTop: -20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--color-text-primary)" }}>{form.title}</h1>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button className="row-action-btn edit" aria-label={`Edit ${form.title}`} title="Edit form" onClick={onEdit}>
+            <Pencil size={16} />
+          </button>
+          <button className="row-action-btn delete" aria-label={`Delete ${form.title}`} title="Delete form" onClick={onDelete}>
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="card ef-card">
+        <div className="ef-scroll-body">
+          <div className="ef-body">
+            {detailItems.map((item) => (
+              <div className="ef-field" key={item.label}>
+                <label className="ef-label">{item.label}</label>
+                <input className="ef-input" type="text" disabled readOnly value={String(item.value)} />
+              </div>
+            ))}
+            {(form.fields || []).map((field, index) => {
+              const choices = field.options || [];
+              return (
+                <div className={`ef-field${field.type === "textarea" ? " full" : ""}`} key={field.id ?? index}>
+                  <label className="ef-label">{field.label}{field.required && <span className="ef-required">*</span>}</label>
+                  {field.type === "textarea" ? (
+                    <textarea className="ef-input" rows={3} disabled placeholder="Long text" />
+                  ) : field.type === "select" ? (
+                    <select className="ef-input" disabled defaultValue="">
+                      <option value="">Select an option</option>
+                      {choices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+                    </select>
+                  ) : field.type === "multiselect" || field.type === "checkbox" ? (
+                    <div className="assigned-form-options">
+                      {choices.map((choice) => (
+                        <label key={choice}><input type="checkbox" disabled /> {choice}</label>
+                      ))}
+                    </div>
+                  ) : (
+                    <input className="ef-input" type={field.type} disabled placeholder={FIELD_TYPE_LABELS[field.type] || "Text"} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function FormBuilder({ auth }) {
   const [employees, setEmployees] = useState([]);
   const [forms, setForms] = useState([]);
   const [saving, setSaving] = useState(false);
   const [viewing, setViewing] = useState(null);
+  const [viewingForm, setViewingForm] = useState(null);
   const [builder, setBuilder] = useState(createBuilder);
   const [activeTab, setActiveTab] = useState("builder");
   const [message, setMessage] = useState(null);
@@ -43,6 +121,7 @@ function FormBuilder({ auth }) {
   const [templates, setTemplates] = useState([]);
 
   const currentUser = auth?.user || {};
+  const masters = useMasters(["departments", "roles", "states", "cities"]);
   const isAdmin = isAdminUser(currentUser);
 
   const loadForms = useCallback(async () => {
@@ -80,6 +159,7 @@ function FormBuilder({ auth }) {
 
   const updateFieldType = (index, type) => {
     updateField(index, "type", type);
+    if (type === "master" && !builder.fields[index]?.masterKey) updateField(index, "masterKey", "departments");
     if (["select", "multiselect", "checkbox"].includes(type) && !(builder.fields[index]?.options || []).length) {
       updateField(index, "options", ["Option 1", "Option 2"]);
     }
@@ -112,7 +192,7 @@ function FormBuilder({ auth }) {
       title: form.title || "",
       assignedTo: form.assignedTo || "all",
       approvedBy: form.approvedBy ? String(form.approvedBy) : "",
-      fields: (form.fields || []).map((field) => ({ ...field, id: field.id || Date.now() + Math.random() })),
+      fields: (form.fields || []).map((field) => ({ ...field, type: field.masterKey ? "master" : field.type, id: field.id || Date.now() + Math.random() })),
     });
     setEditingFormId(form.id);
     setErrors({});
@@ -157,7 +237,9 @@ function FormBuilder({ auth }) {
         title: builder.title.trim(),
         assignedTo: builder.assignedTo,
         approvedBy: builder.approvedBy,
-        fields: validFields.map(({ id, label, type, required, options }) => ({ id, label: label.trim(), type, required, options })),
+        fields: validFields.map(({ id, label, type, required, options, masterKey }) => (type === "master"
+          ? { id, label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) }
+          : { id, label: label.trim(), type, required, options })),
       };
       if (editingFormId) await updateForm(editingFormId, payload);
       else await createForm(payload);
@@ -237,7 +319,7 @@ function FormBuilder({ auth }) {
           <div style={{ color: "var(--color-text-muted)", fontSize: 12, textTransform: "uppercase", letterSpacing: 1.2 }}>
             Admin portal
           </div>
-          <h1 style={{ margin: "6px 0 0", fontSize: 28, fontWeight: 800 }}>Form Builder</h1>
+          <h1 style={{ margin: "6px 0 0", fontSize: 28, fontWeight: 800 }}>Contact</h1>
         </div>
         <div className="fb-tabs" role="tablist">
           <button role="tab" aria-selected={activeTab === "builder"} className={activeTab === "builder" ? "active" : ""} onClick={() => setActiveTab("builder")}>
@@ -334,6 +416,15 @@ function FormBuilder({ auth }) {
                     </select>
                   </div>
 
+                  {field.type === "master" && (
+                    <div className="ef-field">
+                      <label className="ef-label" htmlFor={`fb-master-${field.id}`}>Master</label>
+                      <select id={`fb-master-${field.id}`} className="ef-input" value={field.masterKey || "departments"} onChange={(event) => updateField(index, "masterKey", event.target.value)}>
+                        {Object.entries(MASTER_OPTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </div>
+                  )}
+
                   {["select", "multiselect", "checkbox"].includes(field.type) && (
                     <div className="ef-field fb-options-field">
                       <div className="fb-options-head">
@@ -391,32 +482,50 @@ function FormBuilder({ auth }) {
           </div>
         </form>
       ) : activeTab === "forms" ? (
-        <DataTable
-          title="Forms"
-          noun="form"
-          searchPlaceholder="Search form..."
-          rows={formRows}
-          emptyTitle="No forms yet"
-          emptyText="Create your first employee form from the Build form tab."
-          columns={[
-            { key: "title", label: "Title", value: (row) => row.title },
-            { key: "assignedTo", label: "Assigned to", value: (row) => row.assignedTo },
-            { key: "approver", label: "Approved by", value: (row) => row.approver },
-            { key: "received", label: "Responses", value: (row) => row.received, sortValue: (row) => row.received },
-            { key: "pending", label: "Pending", value: (row) => row.pending, sortValue: (row) => row.pending },
-            { key: "created", label: "Created", value: (row) => new Date(row.createdAt).toLocaleDateString(), sortValue: (row) => new Date(row.createdAt).getTime() },
-          ]}
-          renderActions={(row) => (
-            <div className="row-actions">
-              <button type="button" className="row-action-btn edit" aria-label={`Edit ${row.title}`} title="Edit form" onClick={() => editForm(row.form)}>
-                <Pencil size={14} />
-              </button>
-              <button type="button" className="row-action-btn delete" aria-label={`Delete ${row.title}`} title="Delete form" onClick={() => window.confirm(`Delete "${row.title}" and all of its responses?`) && deleteForm(row.id)}>
-                <Trash2 size={14} />
-              </button>
-            </div>
-          )}
-        />
+        viewingForm ? (
+          <FormDetail
+            form={viewingForm}
+            employeeLookup={employeeLookup}
+            onBack={() => setViewingForm(null)}
+            onEdit={() => { setViewingForm(null); editForm(viewingForm); }}
+            onDelete={() => {
+              if (!window.confirm(`Delete "${viewingForm.title}" and all of its responses?`)) return;
+              deleteForm(viewingForm.id);
+              setViewingForm(null);
+            }}
+          />
+        ) : (
+          <DataTable
+            title="Forms"
+            noun="form"
+            searchPlaceholder="Search form..."
+            rows={formRows}
+            emptyTitle="No forms yet"
+            emptyText="Create your first employee form from the Build form tab."
+            columns={[
+              { key: "title", label: "Title", value: (row) => row.title },
+              { key: "assignedTo", label: "Assigned to", value: (row) => row.assignedTo },
+              { key: "approver", label: "Approved by", value: (row) => row.approver },
+              { key: "received", label: "Responses", value: (row) => row.received, sortValue: (row) => row.received },
+              { key: "pending", label: "Pending", value: (row) => row.pending, sortValue: (row) => row.pending },
+              { key: "created", label: "Created", value: (row) => new Date(row.createdAt).toLocaleDateString(), sortValue: (row) => new Date(row.createdAt).getTime() },
+            ]}
+            onRowClick={(row) => setViewingForm(row.form)}
+            renderActions={(row) => (
+              <div className="row-actions">
+                <button type="button" className="row-action-btn view" aria-label={`View ${row.title}`} title="View form" onClick={(event) => { event.stopPropagation(); setViewingForm(row.form); }}>
+                  <Eye size={14} />
+                </button>
+                <button type="button" className="row-action-btn edit" aria-label={`Edit ${row.title}`} title="Edit form" onClick={(event) => { event.stopPropagation(); editForm(row.form); }}>
+                  <Pencil size={14} />
+                </button>
+                <button type="button" className="row-action-btn delete" aria-label={`Delete ${row.title}`} title="Delete form" onClick={(event) => { event.stopPropagation(); window.confirm(`Delete "${row.title}" and all of its responses?`) && deleteForm(row.id); }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
+          />
+        )
       ) : viewing ? (
         <FormResponseDetail form={viewing.form} response={viewing.response} onBack={() => setViewing(null)} actions={reviewButton(viewing)} />
       ) : (

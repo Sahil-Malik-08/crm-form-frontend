@@ -1,27 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, FileText, Plus, Search, Trash2 } from "lucide-react";
-import { createFormTemplate, deleteFormTemplate, fetchFormTemplates, isAdminUser } from "../utils/employeeForms";
+import { ArrowLeft, Calendar, CheckCircle2, Clock, FileText, Layers, Pencil, Plus, Search, Trash2, User, UserCog } from "lucide-react";
+import { useMasters } from "../hooks/useMasters";
+import { createFormTemplate, deleteFormTemplate, fetchAccounts, fetchFormTemplates, isAdminUser, updateFormTemplate } from "../utils/employeeForms";
 
-const FIELD_TYPE_LABELS = { text: "Normal", number: "Number", date: "Date", email: "Email", textarea: "Long text", checkbox: "Checkbox", select: "Dropdown", multiselect: "Multi-select" };
+const FIELD_TYPE_LABELS = { text: "Normal", number: "Number", date: "Date", email: "Email", textarea: "Long text", checkbox: "Checkbox", select: "Dropdown", multiselect: "Multi-select", master: "Master" };
+const MASTER_OPTIONS = { departments: "Department", roles: "Role", states: "State", cities: "City" };
 
 const createField = () => ({ id: Date.now() + Math.random(), label: "", type: "text", required: true, options: [] });
-const createBuilder = () => ({ title: "", fields: [createField()] });
+const DEFAULT_FIELDS = [
+  { label: "Full Name", type: "text", required: true },
+  { label: "Phone Number", type: "text", required: true },
+  { label: "Email Address", type: "email", required: false },
+  { label: "Gender", type: "text", required: false },
+  { label: "Birthday", type: "date", required: false },
+  { label: "Address", type: "text", required: false },
+  { label: "Notes", type: "text", required: false },
+];
+const createBuilder = () => ({
+  title: "",
+  assignedTo: "all",
+  approvedBy: "",
+  fields: DEFAULT_FIELDS.map((field) => ({ ...createField(), ...field })),
+});
+
+const employeeName = (employee) => employee.fullName || employee.name || employee.email || `Employee ${employee.id}`;
 
 function FormMaster({ auth }) {
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [templatesError, setTemplatesError] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
   const [builder, setBuilder] = useState(createBuilder);
   const [builderErrors, setBuilderErrors] = useState({});
   const [builderSaving, setBuilderSaving] = useState(false);
   const [builderMessage, setBuilderMessage] = useState(null);
+  const masters = useMasters(["departments", "roles", "states", "cities"]);
   const isAdmin = isAdminUser(auth?.user || {});
   const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -31,7 +52,13 @@ function FormMaster({ auth }) {
       .then((list) => { setTemplates(Array.isArray(list) ? list : []); setTemplatesError(""); })
       .catch((error) => setTemplatesError(error.message))
       .finally(() => setTemplatesLoading(false));
+    fetchAccounts().then(setEmployees).catch((error) => console.error("[FormMaster] Failed to load employees:", error));
   }, [isAdmin]);
+
+  const employeeLookup = useMemo(
+    () => Object.fromEntries(employees.map((employee) => [String(employee.id), employeeName(employee)])),
+    [employees],
+  );
 
   const filteredTemplates = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -75,6 +102,7 @@ function FormMaster({ auth }) {
 
   const updateFieldType = (index, type) => {
     updateField(index, "type", type);
+    if (type === "master" && !builder.fields[index]?.masterKey) updateField(index, "masterKey", "departments");
     if (["select", "multiselect", "checkbox"].includes(type) && !(builder.fields[index]?.options || []).length) {
       updateField(index, "options", ["Option 1", "Option 2"]);
     }
@@ -104,9 +132,24 @@ function FormMaster({ auth }) {
 
   const closeAdd = () => {
     setShowAdd(false);
+    setEditingTemplateId(null);
     setBuilder(createBuilder());
     setBuilderErrors({});
     setBuilderMessage(null);
+  };
+
+  const editTemplate = (template) => {
+    setBuilder({
+      title: template.title || "",
+      assignedTo: template.assignedTo || "all",
+      approvedBy: template.approvedBy ? String(template.approvedBy) : "",
+      fields: (template.fields || []).map((field) => ({ ...field, type: field.masterKey ? "master" : field.type, id: field.id || Date.now() + Math.random() })),
+    });
+    setEditingTemplateId(template.id);
+    setBuilderErrors({});
+    setBuilderMessage(null);
+    setSelectedTemplate(null);
+    setShowAdd(true);
   };
 
   const saveNewTemplate = async (event) => {
@@ -120,10 +163,16 @@ function FormMaster({ auth }) {
     }
     setBuilderSaving(true);
     try {
-      await createFormTemplate({
+      const payload = {
         title: builder.title.trim(),
-        fields: validFields.map(({ label, type, required, options }) => ({ label: label.trim(), type, required, options })),
-      });
+        assignedTo: builder.assignedTo,
+        approvedBy: builder.approvedBy,
+        fields: validFields.map(({ label, type, required, options, masterKey }) => (type === "master"
+          ? { label: label.trim(), type: "select", required, masterKey, options: (masters[masterKey] || []).map((item) => item.name) }
+          : { label: label.trim(), type, required, options })),
+      };
+      if (editingTemplateId) await updateFormTemplate(editingTemplateId, payload);
+      else await createFormTemplate(payload);
       setTemplates(await fetchFormTemplates());
       closeAdd();
     } catch (error) {
@@ -155,46 +204,73 @@ function FormMaster({ auth }) {
 
   if (selectedTemplate) {
     const fieldTypeCounts = (selectedTemplate.fields || []).length;
+    const detailAssignedTo = selectedTemplate.assignedTo === "all" || !selectedTemplate.assignedTo
+      ? "All employees"
+      : employeeLookup[String(selectedTemplate.assignedTo)] || "Employee";
+    const detailItems = [
+      { label: "Assigned to", value: detailAssignedTo, icon: User },
+      { label: "Approved by", value: selectedTemplate.approvedByName || "Not selected", icon: CheckCircle2 },
+      { label: "Created by", value: selectedTemplate.createdByName || "—", icon: UserCog },
+      { label: "Created at", value: selectedTemplate.createdAt ? new Date(selectedTemplate.createdAt).toLocaleString() : "—", icon: Calendar },
+      { label: "Updated at", value: selectedTemplate.updatedAt ? new Date(selectedTemplate.updatedAt).toLocaleString() : "—", icon: Clock },
+      { label: "Fields", value: fieldTypeCounts, icon: Layers },
+    ];
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 18, minHeight: 0 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginTop: -20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button onClick={() => setSelectedTemplate(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
               <ArrowLeft size={22} />
             </button>
             <div>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--color-text-primary)" }}>{selectedTemplate.title}</h1>
-              <p style={{ margin: "4px 0 0", color: "var(--color-text-muted)", fontSize: 13 }}>
-                {fieldTypeCounts} fields{selectedTemplate.createdAt ? ` | Created ${new Date(selectedTemplate.createdAt).toLocaleDateString()}` : ""}
-              </p>
             </div>
           </div>
-          <button className="row-action-btn delete" aria-label={`Delete ${selectedTemplate.title}`} title="Delete form" onClick={() => removeTemplate(selectedTemplate)}>
-            <Trash2 size={16} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button className="row-action-btn edit" aria-label={`Edit ${selectedTemplate.title}`} title="Edit form" onClick={() => editTemplate(selectedTemplate)}>
+              <Pencil size={16} />
+            </button>
+            <button className="row-action-btn delete" aria-label={`Delete ${selectedTemplate.title}`} title="Delete form" onClick={() => removeTemplate(selectedTemplate)}>
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
 
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <table className="modern-table" style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "center", background: "var(--color-surface)" }}>Label</th>
-                <th style={{ textAlign: "center", background: "var(--color-surface)", width: 140 }}>Type</th>
-                <th style={{ textAlign: "center", background: "var(--color-surface)", width: 110 }}>Required</th>
-                <th style={{ textAlign: "center", background: "var(--color-surface)" }}>Options</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(selectedTemplate.fields || []).map((field, index) => (
-                <tr key={field.id ?? index}>
-                  <td style={{ textAlign: "center" }}>{field.label}</td>
-                  <td style={{ textAlign: "center", textTransform: "capitalize" }}>{field.type}</td>
-                  <td style={{ textAlign: "center" }}>{field.required ? "Yes" : "No"}</td>
-                  <td style={{ textAlign: "center", color: "var(--color-text-muted)", fontSize: 12 }}>{(field.options || []).join(", ") || "—"}</td>
-                </tr>
+        <div className="card ef-card">
+          <div className="ef-scroll-body">
+            <div className="ef-body">
+              {detailItems.map((item) => (
+                <div className="ef-field" key={item.label}>
+                  <label className="ef-label">{item.label}</label>
+                  <input className="ef-input" type="text" disabled value={String(item.value)} readOnly />
+                </div>
               ))}
-            </tbody>
-          </table>
+              {(selectedTemplate.fields || []).map((field, index) => {
+                const choices = field.options || [];
+                return (
+                  <div className={`ef-field${field.type === "textarea" ? " full" : ""}`} key={field.id ?? index}>
+                    <label className="ef-label">{field.label}{field.required && <span className="ef-required">*</span>}</label>
+                    {field.type === "textarea" ? (
+                      <textarea className="ef-input" rows={3} disabled placeholder="Long text" />
+                    ) : field.type === "select" ? (
+                      <select className="ef-input" disabled defaultValue="">
+                        <option value="">Select an option</option>
+                        {choices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+                      </select>
+                    ) : field.type === "multiselect" || field.type === "checkbox" ? (
+                      <div className="assigned-form-options">
+                        {choices.map((choice) => (
+                          <label key={choice}><input type="checkbox" disabled /> {choice}</label>
+                        ))}
+                      </div>
+                    ) : (
+                      <input className="ef-input" type={field.type} disabled placeholder={FIELD_TYPE_LABELS[field.type] || "Text"} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -207,7 +283,7 @@ function FormMaster({ auth }) {
         <form className="card ef-card" onSubmit={saveNewTemplate} noValidate>
           <div className="ef-header">
             <div>
-              <h3 className="ef-title">Create a new form</h3>
+              <h3 className="ef-title">{editingTemplateId ? "Edit form" : "Create a new form"}</h3>
               <div className="ef-meta">Define the fields for this form template.</div>
             </div>
           </div>
@@ -226,6 +302,26 @@ function FormMaster({ auth }) {
                   placeholder="e.g. Vendor onboarding form"
                 />
                 {builderErrors.title && <span className="ef-error">A title is required.</span>}
+              </div>
+
+              <div className="ef-field">
+                <label className="ef-label" htmlFor="fm-assigned">Assigned to</label>
+                <select id="fm-assigned" className="ef-input" value={builder.assignedTo} onChange={(event) => updateBuilder("assignedTo", event.target.value)}>
+                  <option value="all">All employees</option>
+                  {employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>{employeeName(employee)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ef-field">
+                <label className="ef-label" htmlFor="fm-approver">Approved by</label>
+                <select id="fm-approver" className="ef-input" value={builder.approvedBy} onChange={(event) => updateBuilder("approvedBy", event.target.value)}>
+                  <option value="">Select approver</option>
+                  {employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>{employeeName(employee)}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -254,6 +350,15 @@ function FormMaster({ auth }) {
                         {Object.entries(FIELD_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </div>
+
+                    {field.type === "master" && (
+                      <div className="ef-field">
+                        <label className="ef-label" htmlFor={`fm-master-${field.id}`}>Master</label>
+                        <select id={`fm-master-${field.id}`} className="ef-input" value={field.masterKey || "departments"} onChange={(event) => updateField(index, "masterKey", event.target.value)}>
+                          {Object.entries(MASTER_OPTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                        </select>
+                      </div>
+                    )}
 
                     {["select", "multiselect", "checkbox"].includes(field.type) && (
                       <div className="ef-field fb-options-field">
@@ -305,7 +410,7 @@ function FormMaster({ auth }) {
                 Cancel
               </button>
               <button className="primary" type="submit" disabled={builderSaving}>
-                <FileText size={16} /> {builderSaving ? "Saving..." : "Save form"}
+                <FileText size={16} /> {builderSaving ? "Saving..." : editingTemplateId ? "Update form" : "Save form"}
               </button>
             </div>
           </div>
@@ -359,11 +464,12 @@ function FormMaster({ auth }) {
               <table className="modern-table" style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 260, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("title")}>Title{renderSortIcon("title")}</th>
-                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 90, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("fields")}>Fields{renderSortIcon("fields")}</th>
-                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 140, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("createdAt")}>Created{renderSortIcon("createdAt")}</th>
+                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 220, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("title")}>Title{renderSortIcon("title")}</th>
+                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 80, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("fields")}>Fields{renderSortIcon("fields")}</th>
+                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 150 }}>Approved by</th>
+                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 130, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("createdAt")}>Created{renderSortIcon("createdAt")}</th>
                     <th style={{ textAlign: "center", background: "var(--color-surface)" }}>Field Preview</th>
-                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 90 }}>Actions</th>
+                    <th style={{ textAlign: "center", background: "var(--color-surface)", width: 110 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -376,12 +482,16 @@ function FormMaster({ auth }) {
                         </div>
                       </td>
                       <td style={{ textAlign: "center" }}>{template.fields?.length || 0}</td>
+                      <td style={{ textAlign: "center" }}>{template.approvedByName || "—"}</td>
                       <td style={{ textAlign: "center" }}>{template.createdAt ? new Date(template.createdAt).toLocaleDateString() : "—"}</td>
                       <td style={{ textAlign: "center", color: "var(--color-text-muted)", fontSize: 12 }}>
                         {(template.fields || []).slice(0, 4).map((field) => field.label).join(", ")}{(template.fields || []).length > 4 ? "..." : ""}
                       </td>
                       <td style={{ textAlign: "center" }}>
                         <div className="row-actions" style={{ justifyContent: "center", gap: 6 }}>
+                          <button type="button" className="row-action-btn edit" aria-label={`Edit ${template.title}`} title="Edit form" onClick={(event) => { event.stopPropagation(); editTemplate(template); }}>
+                            <Pencil size={14} />
+                          </button>
                           <button type="button" className="row-action-btn delete" aria-label={`Delete ${template.title}`} title="Delete form" onClick={(event) => { event.stopPropagation(); removeTemplate(template); }}>
                             <Trash2 size={14} />
                           </button>

@@ -45,6 +45,9 @@ export const fetchFormTemplates = () =>
 export const createFormTemplate = (template) =>
   call("/form-templates", { method: "POST", body: JSON.stringify(template) }, "Could not save the form template.");
 
+export const updateFormTemplate = (id, template) =>
+  call(`/form-templates/${id}`, { method: "PUT", body: JSON.stringify(template) }, "Could not update the form template.");
+
 export const deleteFormTemplate = (id) =>
   call(`/form-templates/${id}`, { method: "DELETE" }, "Could not delete the form template.");
 

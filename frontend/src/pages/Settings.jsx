@@ -393,12 +393,6 @@ function Settings({ activeMaster, auth }) {
   if (active === "form-master") {
     return (
       <>
-        <div className="title">
-          <div>
-            <h1>Form Master</h1>
-            <p>Manage master data for your organization.</p>
-          </div>
-        </div>
         <FormMaster auth={auth} />
       </>
     );
