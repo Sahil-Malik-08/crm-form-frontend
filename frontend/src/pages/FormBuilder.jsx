@@ -110,6 +110,7 @@ function FormDetail({ form, employeeLookup, onBack, onEdit, onDelete }) {
 function FormBuilder({ auth }) {
   const [employees, setEmployees] = useState([]);
   const [forms, setForms] = useState([]);
+  const [formsLoading, setFormsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [viewing, setViewing] = useState(null);
   const [viewingForm, setViewingForm] = useState(null);
@@ -129,6 +130,8 @@ function FormBuilder({ auth }) {
       setForms(await fetchForms());
     } catch (error) {
       setMessage({ type: "error", text: error.message });
+    } finally {
+      setFormsLoading(false);
     }
   }, []);
 
@@ -326,10 +329,15 @@ function FormBuilder({ auth }) {
     <div className="page-with-title-row" style={{ display: "flex", flexDirection: "column", gap: 18, flex: 1, minHeight: 0 }}>
       <div className="fb-page-head">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => window.history.back()} aria-label="Go back" title="Go back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
-            <ArrowLeft size={22} />
-          </button>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>Admin portal</h1>
+          {/* Detail views render their own back arrow and title, so don't stack the page heading above them. */}
+          {!viewingForm && !viewing && (
+            <>
+              <button onClick={() => window.history.back()} aria-label="Go back" title="Go back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+                <ArrowLeft size={22} />
+              </button>
+              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" }}>Admin portal</h1>
+            </>
+          )}
         </div>
         <div className="fb-tabs" role="tablist">
           <button role="tab" aria-selected={activeTab === "builder"} className={activeTab === "builder" ? "active" : ""} onClick={() => setActiveTab("builder")}>
@@ -502,6 +510,7 @@ function FormBuilder({ auth }) {
           <DataTable
             title="Forms"
             noun="form"
+            loading={formsLoading}
             searchPlaceholder="Search form..."
             rows={formRows}
             emptyTitle="No forms yet"
@@ -536,6 +545,7 @@ function FormBuilder({ auth }) {
         <DataTable
           title="Form responses"
           noun="response"
+          loading={formsLoading}
           searchPlaceholder="Search response..."
           statusFilter
           rows={responseRows}

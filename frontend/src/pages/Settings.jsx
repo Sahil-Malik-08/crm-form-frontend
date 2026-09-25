@@ -8,6 +8,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 function MasterTable({ masterKey, label }) {
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [stateRows, setStateRows] = useState([]);
   const [newName, setNewName] = useState("");
   const [editId, setEditId] = useState(null);
@@ -53,6 +54,8 @@ function MasterTable({ masterKey, label }) {
     } catch (err) {
       setError(err.message);
       setRows([]);
+    } finally {
+      setLoading(false);
     }
   }, [masterKey]);
 
@@ -409,7 +412,12 @@ function MasterTable({ masterKey, label }) {
 
         {error && <div className="fb-notice error" style={{ marginBottom: 12 }}>{error}</div>}
 
-        {filteredRows.length === 0 ? (
+        {loading ? (
+          <div style={{ display: "grid", placeItems: "center", minHeight: 200, gap: 10, flex: 1 }}>
+            <div className="spinner" />
+            <div style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Loading {noun.toLowerCase()}s...</div>
+          </div>
+        ) : filteredRows.length === 0 ? (
           <div className="no-results">
             {isCityMaster ? <MapPin size={64} /> : <Search size={64} />}
             <h3>No records found</h3>

@@ -23,6 +23,7 @@ const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || 
 
 function AssignedForms({ auth }) {
   const [forms, setForms] = useState([]);
+  const [loading, setLoading] = useState(true);
   const masters = useMasters(["cities", "roles"]);
   const [approvals, setApprovals] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -40,6 +41,8 @@ function AssignedForms({ auth }) {
       setApprovals(review);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -153,6 +156,7 @@ function AssignedForms({ auth }) {
         <DataTable
           title="My responses"
           noun="response"
+          loading={loading}
           searchPlaceholder="Search response..."
           rows={responseRows}
           columns={responseColumns()}
@@ -165,6 +169,7 @@ function AssignedForms({ auth }) {
         <DataTable
           title="Assigned forms"
           noun="form"
+          loading={loading}
           searchPlaceholder="Search form..."
           rows={assignedRows}
           columns={[

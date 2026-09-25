@@ -26,6 +26,7 @@ function DataTable({
   actionsLabel = "Actions",
   emptyTitle = "Nothing to show",
   emptyText = "Try adjusting your search or filter criteria.",
+  loading = false,
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
@@ -79,7 +80,12 @@ function DataTable({
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div style={{ display: "grid", placeItems: "center", minHeight: 200, gap: 10, flex: 1 }}>
+          <div className="spinner" />
+          <div style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Loading {noun}s...</div>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="no-results">
           <SearchX size={64} />
           <h3>{rows.length === 0 ? emptyTitle : `No ${noun}s found`}</h3>
@@ -119,7 +125,7 @@ function DataTable({
         </div>
       )}
 
-      {filtered.length > 0 && (
+      {!loading && filtered.length > 0 && (
         <div className="pagination-controls data-table-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0 0", marginTop: 8, borderTop: "1px solid var(--color-border)", flexWrap: "wrap", gap: 12, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

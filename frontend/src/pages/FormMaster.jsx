@@ -291,7 +291,10 @@ function FormMaster({ auth }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {builderMessage && <div className={`fb-notice ${builderMessage.type}`}>{builderMessage.text}</div>}
         <form className="card ef-card" onSubmit={saveNewTemplate} noValidate>
-          <div className="ef-header">
+          <div className="ef-header" style={{ justifyContent: "flex-start", gap: 10 }}>
+            <button type="button" onClick={closeAdd} aria-label="Back to forms" title="Back" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center", color: "var(--color-text-secondary)" }}>
+              <ArrowLeft size={22} />
+            </button>
             <div>
               <h3 className="ef-title">{editingTemplateId ? "Edit form" : "Create a new form"}</h3>
               <div className="ef-meta">Define the fields for this form template.</div>
